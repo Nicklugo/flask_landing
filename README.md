@@ -4,11 +4,7 @@ A clean, modern landing page built with Flask that displays links to your other 
 
 ## Features
 
-- 🎨 Modern, responsive design
-- 🔗 Easy to customize links
-- 🚀 Simple Flask backend
-- 📱 Mobile-friendly
-- ⚡ Fast and lightweight
+- Brick Breaker game behind active links
 
 ## Quick Start
 
