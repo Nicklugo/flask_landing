@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nick Lugo - Brick Breaker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: #2a2a2a;
+            color: #ffff00;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .game-area {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+            background: #4a4a4a;
+            background-image: 
+                linear-gradient(90deg, #555 1px, transparent 1px),
+                linear-gradient(#555 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 8px solid transparent;
+            border-image: repeating-linear-gradient(45deg, #000 0px, #000 10px, #ffff00 10px, #ffff00 20px) 8;
+            margin: 10px;
+        }
+        
+        .hud-panel {
+            flex: 0 0 200px;
+            min-width: 180px;
+            background: #333;
+            background-image: 
+                radial-gradient(circle at 20px 20px, #444 2px, transparent 2px),
+                radial-gradient(circle at 40px 40px, #444 2px, transparent 2px);
+            background-size: 40px 40px;
+            border: 2px solid #666;
+            margin: 10px 10px 10px 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+        
+        /* Responsive design for smaller screens */
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+            
+            .game-area {
+                flex: 1;
+                margin: 5px;
+            }
+            
+            .hud-panel {
+                flex: 0 0 auto;
+                flex-direction: row;
+                justify-content: space-around;
+                padding: 10px;
+                margin: 5px;
+                min-width: unset;
+            }
+            
+            .hud-stat {
+                flex: 1;
+                margin: 0 5px;
+                padding: 10px;
+            }
+            
+            .hud-label {
+                font-size: 1rem;
+            }
+            
+            .hud-value {
+                font-size: 1.2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hud-panel {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .hud-stat {
+                margin: 2px 0;
+                padding: 8px;
+            }
+            
+            .title {
+                font-size: 1.2rem;
+                margin-bottom: 50px;
+            }
+            
+            .link {
+                font-size: 1rem;
+            }
+            
+            .link-info {
+                font-size: 0.8rem;
+            }
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: transparent;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            max-width: calc(100% - 40px);
+            pointer-events: none;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 2px 2px 0px #000;
+            letter-spacing: 2px;
+            margin-bottom: 100px; /* 5 gridlines (20px each) = 100px */
+        }
+        
+        /* Responsive adjustments for UI overlay */
+        @media (max-width: 768px) {
+            .ui-overlay {
+                top: 10px;
+                left: 10px;
+                max-width: calc(100% - 20px);
+            }
+            
+            .title {
+                font-size: 1.3rem;
+                margin-bottom: 60px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .ui-overlay {
+                top: 5px;
+                left: 5px;
+                max-width: calc(100% - 10px);
+            }
+            
+            .title {
+                font-size: 1.1rem;
+                margin-bottom: 40px;
+            }
+        }
+        
+        .links-section {
+            text-align: left;
+            margin-top: 20px;
+            pointer-events: auto;
+            position: relative;
+            z-index: 11;
+        }
+        
+        .link-item {
+            margin-bottom: 15px;
+            display: block;
+            pointer-events: auto;
+            position: relative;
+            z-index: 11;
+        }
+        
+        .link {
+            color: #ffff00;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 0px #000;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 3px;
+            pointer-events: auto;
+            cursor: pointer;
+            position: relative;
+            z-index: 11;
+        }
+        
+        .link:hover {
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000;
+        }
+        
+        .link-info {
+            color: #ffff00;
+            font-size: 0.9rem;
+            text-shadow: 1px 1px 0px #000;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-left: 10px;
+        }
+        
+        .hud-stat {
+            background: #222;
+            border: 2px solid #666;
+            padding: 15px;
+            margin: 5px 0;
+            text-align: center;
+        }
+        
+        .hud-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 1px 1px 0px #000;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        
+        .hud-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 1px 1px 0px #000;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #ffff00;
+            font-size: 0.9rem;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 1px 1px 0px #000;
+        }
+        
+        
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-area">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div class="ui-overlay">
+                <h1 class="title">NICK LUGO</h1>
+                <div class="links-section">
+                    <div class="link-item">
+                        <a href="https://github.com/nicklugo" class="link">GitHub</a>
+                        <span class="link-info">Software Development & Projects</span>
+                    </div>
+                    <div class="link-item">
+                        <a href="https://www.youtube.com/watch?v=QDia3e12czc" class="link">LinkedIn</a>
+                        <span class="link-info">Professional Network & Experience</span>
+                    </div>
+                    <div class="link-item">
+                        <a href="mailto:nicklugo01@gmail.com" class="link">Email</a>
+                        <span class="link-info">Contact & Collaboration</span>
+                    </div>
+                    <div class="link-item">
+                        <a href="https://nicklugo.dev" class="link">Portfolio</a>
+                        <span class="link-info">Full-Stack Development Showcase</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="instructions">
+                MOVE MOUSE OR USE ARROW KEYS • CLICK OR SPACEBAR TO LAUNCH
+            </div>
+        </div>
+        
+        <div class="hud-panel">
+            <div class="hud-stat">
+                <div class="hud-label">SCORE</div>
+                <div class="hud-value" id="score">0</div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-label">AMMO</div>
+                <div class="hud-value" id="ammo">0</div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-label">LIVES</div>
+                <div class="hud-value" id="lives">3</div>
+            </div>
+            <div class="hud-stat">
+                <div class="hud-label">HIGHEST SCORE</div>
+                <div class="hud-value" id="hiscore">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const ammoElement = document.getElementById('ammo');
+        const livesElement = document.getElementById('lives');
+        const hiscoreElement = document.getElementById('hiscore');
+        
+        // Set canvas size to fit game area
+        const gameArea = document.querySelector('.game-area');
+        canvas.width = gameArea.offsetWidth;
+        canvas.height = gameArea.offsetHeight;
+        
+        // Game state
+        let score = 0;
+        let lives = 3;
+        let ammo = 0;
+        let hiscore = 0;
+        let gameState = 'playing'; // 'playing', 'gameOver', 'paused'
+        let mouseX = canvas.width / 2;
+        let ballLaunched = false;
+        
+        // Ball object
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height - 100,
+            radius: 8,
+            vx: 3,
+            vy: -3,
+            speed: 3
+        };
+        
+        // Paddle object
+        let paddle = {
+            x: canvas.width / 2 - 60,
+            y: canvas.height - 30,
+            width: 120,
+            height: 15,
+            speed: 0
+        };
+        
+        // Brick configuration - much smaller bricks for vertical stacking
+        const brickRows = 20;
+        const brickCols = 16;
+        let brickWidth = (canvas.width - 40) / brickCols;
+        let brickHeight = 8;
+        let brickPadding = 1;
+        let brickOffsetTop = 40 + (2 * (brickHeight + brickPadding));
+        let brickOffsetLeft = (canvas.width - (brickCols * (brickWidth + brickPadding) - brickPadding)) / 2 + (2 * (brickWidth + brickPadding));
+        
+        // Brick colors - dark red metallic theme
+        const brickColors = [
+            '#8B0000', '#A52A2A', '#B22222', '#DC143C',
+            '#8B0000', '#A52A2A', '#B22222', '#DC143C'
+        ];
+        
+        // Initialize bricks to spell out "NICK" above "LUGO" with smaller bricks
+        let bricks = [];
+        function initBricks() {
+            bricks = [];
+            
+            // Define the pattern for a large + sign using a 20x16 grid
+            // The + sign will be centered with a thicker vertical line and horizontal line
+            const textPattern = [
+                // Top section - thick vertical line (moved left by 2)
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                // Horizontal line of + sign (intersecting with vertical) - thicker (moved left by 2)
+                [0,0, 0, 1,1,1,1,1,1,1,1,1,1, 0, 0, 0],
+                [0,0, 0, 1,1,1,1,1,1,1,1,1,1, 0, 0, 0],
+                [0,0, 0, 1,1,1,1,1,1,1,1,1,1, 0, 0, 0],
+                [0,0, 0, 1,1,1,1,1,1,1,1,1,1, 0, 0, 0],
+                // Bottom section - thick vertical line continues (moved left by 2)
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0],
+                [0,0, 0, 0, 0,0, 1,1,1,1, 0, 0, 0, 0, 0, 0]
+            ];
+            
+            for (let r = 0; r < brickRows; r++) {
+                bricks[r] = [];
+                for (let c = 0; c < brickCols; c++) {
+                    // Check if this position should have a brick based on the text pattern
+                    if (r < textPattern.length && c < textPattern[r].length && textPattern[r][c] === 1) {
+                        bricks[r][c] = {
+                            x: brickOffsetLeft + c * (brickWidth + brickPadding),
+                            y: brickOffsetTop + r * (brickHeight + brickPadding),
+                            width: brickWidth,
+                            height: brickHeight,
+                            visible: true,
+                            hits: 2, // Bricks need to be hit twice
+                            color: brickColors[r % brickColors.length],
+                            points: (brickRows - r) * 10,
+                            isCenter: false
+                        };
+                    } else {
+                        bricks[r][c] = null;
+                    }
+                }
+            }
+        }
+        
+        // Initialize game
+        initBricks();
+        
+        // Ball class
+        class Ball {
+            constructor() {
+                this.reset();
+            }
+            
+            reset() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 100;
+                this.vx = 0;
+                this.vy = 0;
+                this.radius = 8;
+                this.speed = 3;
+                ballLaunched = false;
+            }
+            
+            launch() {
+                if (!ballLaunched) {
+                    this.vx = (Math.random() - 0.5) * 6;
+                    this.vy = -3;
+                    ballLaunched = true;
+                }
+            }
+            
+            update() {
+                if (gameState !== 'playing') return;
+                
+                // If ball not launched, follow paddle
+                if (!ballLaunched) {
+                    this.x = paddle.x + paddle.width / 2;
+                    this.y = paddle.y - this.radius - 5;
+                    return;
+                }
+                
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Wall collisions
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.vx = -this.vx;
+                    this.x = Math.max(this.radius, Math.min(canvas.width - this.radius, this.x));
+                }
+                
+                if (this.y - this.radius < 0) {
+                    this.vy = -this.vy;
+                    this.y = this.radius;
+                }
+                
+                // Paddle collision with improved physics
+                if (this.y + this.radius > paddle.y && 
+                    this.x > paddle.x && 
+                    this.x < paddle.x + paddle.width &&
+                    this.y < paddle.y + paddle.height + this.radius) {
+                    
+                    // Calculate hit position on paddle (-1 to 1)
+                    const hitPos = (this.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
+                    
+                    // Variable ball speed based on hit position (like original BlackBerry game)
+                    const speedMultiplier = 1 + Math.abs(hitPos) * 0.5;
+                    this.vx = hitPos * 6 * speedMultiplier;
+                    this.vy = -Math.abs(this.vy) * speedMultiplier;
+                    this.y = paddle.y - this.radius;
+                    
+                    // Add some randomness to make it more interesting
+                    this.vx += (Math.random() - 0.5) * 2;
+                }
+                
+                // Brick collisions
+                for (let r = 0; r < brickRows; r++) {
+                    for (let c = 0; c < brickCols; c++) {
+                        const brick = bricks[r][c];
+                        if (brick && brick.visible) {
+                            if (this.x + this.radius > brick.x && 
+                                this.x - this.radius < brick.x + brick.width &&
+                                this.y + this.radius > brick.y && 
+                                this.y - this.radius < brick.y + brick.height) {
+                                
+                                // Decrement hits instead of immediately destroying
+                                brick.hits--;
+                                
+                                // Only destroy brick and award points when hits reach 0
+                                if (brick.hits <= 0) {
+                                    brick.visible = false;
+                                    score += brick.points;
+                                    ammo += 1;
+                                    scoreElement.textContent = score;
+                                    ammoElement.textContent = ammo;
+                                    if (score > hiscore) {
+                                        hiscore = score;
+                                        hiscoreElement.textContent = hiscore;
+                                    }
+                                    
+                                    // Check if all bricks are destroyed
+                                    if (checkWin()) {
+                                        gameState = 'gameOver';
+                                    }
+                                }
+                                
+                                // Determine which side was hit
+                                const ballCenterX = this.x;
+                                const ballCenterY = this.y;
+                                const brickCenterX = brick.x + brick.width / 2;
+                                const brickCenterY = brick.y + brick.height / 2;
+                                
+                                const deltaX = ballCenterX - brickCenterX;
+                                const deltaY = ballCenterY - brickCenterY;
+                                
+                                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                                    this.vx = -this.vx;
+                                } else {
+                                    this.vy = -this.vy;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Ball lost
+                if (this.y > canvas.height) {
+                    lives--;
+                    livesElement.textContent = lives;
+                    if (lives <= 0) {
+                        gameState = 'gameOver';
+                    } else {
+                        this.reset();
+                    }
+                }
+            }
+            
+            draw() {
+                // Ball gradient
+                const gradient = ctx.createRadialGradient(
+                    this.x - 3, this.y - 3, 0,
+                    this.x, this.y, this.radius
+                );
+                gradient.addColorStop(0, '#ffffff');
+                gradient.addColorStop(0.7, '#4ecdc4');
+                gradient.addColorStop(1, '#45b7d1');
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Ball highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(this.x - 2, this.y - 2, this.radius / 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+        
+        // Create ball instance
+        const gameBall = new Ball();
+        
+        // Check win condition
+        function checkWin() {
+            for (let r = 0; r < brickRows; r++) {
+                for (let c = 0; c < brickCols; c++) {
+                    if (bricks[r][c] && bricks[r][c].visible) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        
+        // Mouse movement
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+        });
+        
+        // Touch support
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mouseX = touch.clientX - rect.left;
+        });
+        
+        // Arrow key controls (like the original BlackBerry game)
+        document.addEventListener('keydown', (e) => {
+            if (gameState !== 'playing') return;
+            
+            const paddleSpeed = 8;
+            switch(e.key) {
+                case 'ArrowLeft':
+                    paddle.x = Math.max(0, paddle.x - paddleSpeed);
+                    break;
+                case 'ArrowRight':
+                    paddle.x = Math.min(canvas.width - paddle.width, paddle.x + paddleSpeed);
+                    break;
+                case ' ':
+                    // Spacebar to launch ball
+                    gameBall.launch();
+                    break;
+            }
+        });
+        
+        // Update paddle position with smooth following
+        function updatePaddle() {
+            const targetX = mouseX - paddle.width / 2;
+            paddle.x += (targetX - paddle.x) * 0.2; // Slightly faster response
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
+        }
+        
+        // Draw paddle - BlackBerry style with blue glow
+        function drawPaddle() {
+            // Paddle shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(paddle.x + 2, paddle.y + 2, paddle.width, paddle.height);
+            
+            // Paddle body - dark blue
+            ctx.fillStyle = '#1a237e';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            
+            // Blue glow strip on top
+            ctx.fillStyle = '#00bcd4';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, 3);
+            
+            // Paddle border
+            ctx.strokeStyle = '#1976d2';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(paddle.x, paddle.y, paddle.width, paddle.height);
+            
+            // Center joystick/launcher
+            const centerX = paddle.x + paddle.width / 2;
+            const centerY = paddle.y + paddle.height / 2;
+            
+            // Joystick base
+            ctx.fillStyle = '#0d47a1';
+            ctx.fillRect(centerX - 3, centerY - 8, 6, 12);
+            
+            // Joystick top
+            ctx.fillStyle = '#000';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 2, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Draw bricks - BlackBerry style with metallic texture
+        function drawBricks() {
+            for (let r = 0; r < brickRows; r++) {
+                for (let c = 0; c < brickCols; c++) {
+                    const brick = bricks[r][c];
+                    if (brick && brick.visible) {
+                        // Determine if brick is damaged (hit once)
+                        const isDamaged = brick.hits === 1;
+                        const opacity = isDamaged ? 0.5 : 1.0;
+                        
+                        // Brick shadow
+                        ctx.fillStyle = `rgba(0, 0, 0, ${0.6 * opacity})`;
+                        ctx.fillRect(brick.x + 3, brick.y + 3, brick.width, brick.height);
+                        
+                        // Brick body - dark red metallic (darker if damaged)
+                        if (isDamaged) {
+                            // Make damaged bricks darker
+                            ctx.fillStyle = '#4a0000';
+                        } else {
+                            ctx.fillStyle = brick.color;
+                        }
+                        ctx.globalAlpha = opacity;
+                        ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                        ctx.globalAlpha = 1.0;
+                        
+                        // Metallic texture lines
+                        ctx.strokeStyle = `rgba(0, 0, 0, ${0.3 * opacity})`;
+                        ctx.lineWidth = 1;
+                        for (let i = 0; i < 3; i++) {
+                            const y = brick.y + (brick.height / 4) * (i + 1);
+                            ctx.beginPath();
+                            ctx.moveTo(brick.x, y);
+                            ctx.lineTo(brick.x + brick.width, y);
+                            ctx.stroke();
+                        }
+                        
+                        // Brick highlight
+                        ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * opacity})`;
+                        ctx.fillRect(brick.x, brick.y, brick.width, 2);
+                        
+                        // Brick border (cracked appearance if damaged)
+                        if (isDamaged) {
+                            ctx.strokeStyle = 'rgba(255, 0, 0, 0.6)';
+                            ctx.lineWidth = 1;
+                        } else {
+                            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+                            ctx.lineWidth = 2;
+                        }
+                        ctx.strokeRect(brick.x, brick.y, brick.width, brick.height);
+                        
+                        // Center brick special marking
+                        if (brick.isCenter) {
+                            ctx.fillStyle = `rgba(255, 255, 255, ${0.3 * opacity})`;
+                            ctx.font = 'bold 8px Courier New';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('★', brick.x + brick.width/2, brick.y + brick.height/2 + 3);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Draw background - no stars for BlackBerry style
+        function drawBackground() {
+            // The background is handled by CSS grid pattern
+            // Just add some subtle industrial details
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        // Draw game over screen - BlackBerry style
+        function drawGameOver() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 36px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText(checkWin() ? 'MISSION COMPLETE' : 'GAME OVER', canvas.width / 2, canvas.height / 2 - 50);
+            
+            ctx.font = 'bold 20px Courier New';
+            ctx.fillText(`FINAL SCORE: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
+            
+            ctx.font = 'bold 16px Courier New';
+            ctx.fillText('CLICK TO RESTART', canvas.width / 2, canvas.height / 2 + 60);
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawBackground();
+            
+            if (gameState === 'playing') {
+                // Update and draw game objects
+                gameBall.update();
+                gameBall.draw();
+                updatePaddle();
+                drawPaddle();
+                drawBricks();
+            } else if (gameState === 'gameOver') {
+                drawGameOver();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Restart game
+        function restartGame() {
+            score = 0;
+            lives = 3;
+            ammo = 0;
+            gameState = 'playing';
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
+            ammoElement.textContent = ammo;
+            initBricks();
+            gameBall.reset();
+        }
+        
+        // Click to launch ball or restart
+        canvas.addEventListener('click', (e) => {
+            // Don't handle clicks on links
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                return;
+            }
+            if (gameState === 'gameOver') {
+                restartGame();
+            } else if (gameState === 'playing' && !ballLaunched) {
+                gameBall.launch();
+            }
+        });
+        
+        // Handle window resize with debouncing
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const gameArea = document.querySelector('.game-area');
+                canvas.width = gameArea.offsetWidth;
+                canvas.height = gameArea.offsetHeight;
+                
+                // Recalculate brick dimensions based on new canvas size
+                const newBrickWidth = (canvas.width - 40) / brickCols;
+                const newBrickHeight = 8;
+                const newBrickPadding = 1;
+                const newBrickOffsetTop = 40 + (2 * (newBrickHeight + newBrickPadding));
+                const newBrickOffsetLeft = (canvas.width - (brickCols * (newBrickWidth + newBrickPadding) - newBrickPadding)) / 2 + (2 * (newBrickWidth + newBrickPadding));
+                
+                // Update brick dimensions
+                brickWidth = newBrickWidth;
+                brickHeight = newBrickHeight;
+                brickPadding = newBrickPadding;
+                brickOffsetTop = newBrickOffsetTop;
+                brickOffsetLeft = newBrickOffsetLeft;
+                
+                // Reset ball and paddle positions
+                gameBall.reset();
+                paddle.x = canvas.width / 2 - paddle.width / 2;
+                paddle.y = canvas.height - 30;
+                
+                initBricks(); // Reinitialize bricks with new positioning
+            }, 100);
+        });
+        
+        
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
